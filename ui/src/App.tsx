@@ -26,6 +26,7 @@ import {
   transcribe,
 } from "./sentences-api-client";
 import { LocationState, Sentence, Transcription } from "./types";
+import { useReactMediaRecorder } from "react-media-recorder-2";
 
 // TODO
 // record audio
@@ -33,14 +34,13 @@ import { LocationState, Sentence, Transcription } from "./types";
 //   transcription comparison
 // factor out these comments file into todo
 // factor out components
-// git push everything
 // future: word, pinyin hover highlight alignment
 // future: word level pinyin, meaning hovering on content!
 // future: word level audio alignment
 
 const DEBUG_GRID = false;
 const BORDER_SIZE = DEBUG_GRID ? "1px" : "0px";
-const INITIALLY_SET_RECORDED_AUDIO_TO_NATIVE_AUDIO = true;
+const INITIALLY_SET_RECORDED_AUDIO_TO_NATIVE_AUDIO = false;
 
 interface TranscribedValueProps {
   recordedAudio: string | undefined;
@@ -71,6 +71,20 @@ const TranscribedPinyin: FC<TranscribedValueProps> = (
   }
 };
 
+interface AudioPlayerProps {
+  src: string | undefined;
+  desc: string;
+}
+
+const AudioPlayer: FC<AudioPlayerProps> = (props: AudioPlayerProps) => {
+  return (
+    <>
+      <Text fontSize="xs">{props.desc}</Text>
+      <audio controls src={props.src}></audio>
+    </>
+  );
+};
+
 const SentenceView: FC = () => {
   let locationState = useLocation().state as LocationState;
   let [sentence, setSentence] = useState<Sentence | null>(null);
@@ -85,12 +99,30 @@ const SentenceView: FC = () => {
   let [recordButtonColor, setRecordButtonColor] = useState("teal");
   let [recordIcon, setRecordIcon] = useState(<Mic />);
   let [transcription, setTranscription] = useState<Transcription | null>(null);
+  let [speakHint, setSpeakHint] = useState("");
+
+  let { status, startRecording, stopRecording, mediaBlobUrl } =
+    useReactMediaRecorder({
+      audio: true,
+      askPermissionOnMount: true,
+    });
 
   useEffect(() => {
     if (recording) {
+      if (status !== "recording") {
+        startRecording();
+        setSpeakHint("Wait a second ...");
+        setTimeout(() => setSpeakHint("Speak!"), 1000);
+        console.log("starting recording");
+      }
       setRecordButtonColor("red");
       setRecordIcon(<Pause />);
     } else {
+      if (status === "recording") {
+        stopRecording();
+        setSpeakHint("");
+        console.log("stopping recording");
+      }
       setRecordButtonColor("teal");
       setRecordIcon(<Mic />);
     }
@@ -131,10 +163,20 @@ const SentenceView: FC = () => {
   }, [locationState]);
 
   useEffect(() => {
+    if (locationState != null && !recording) {
+      setRecordedAudio(mediaBlobUrl);
+    }
+  }, [mediaBlobUrl]);
+
+  useEffect(() => {
     if (recordedAudio != null) {
-      transcribe(recordedAudio).then((data) =>
-        setTranscription(data.transcription)
-      );
+      setTranscription(null);
+      // TODO: could maybe implement a more robust FailedTranscription type and render condition
+      transcribe(recordedAudio)
+        .then((data) => setTranscription(data.transcription))
+        .catch((error) =>
+          setTranscription({ content: "Failed to transcribe.", pinyin: "" })
+        );
     }
   }, [recordedAudio]);
 
@@ -201,8 +243,7 @@ const SentenceView: FC = () => {
             colSpan={1}
             border={`${BORDER_SIZE} solid #000`}
           >
-            <Text fontSize="xs">Play Native Audio</Text>
-            <audio controls src={nativeAudio}></audio>
+            <AudioPlayer src={nativeAudio} desc="Play Native Audio" />
           </GridItem>
           <GridItem
             rowSpan={1}
@@ -219,14 +260,14 @@ const SentenceView: FC = () => {
               icon={recordIcon}
               onClick={toggleRecording}
             />
+            <Text fontSize="xs">{speakHint}</Text>
           </GridItem>
           <GridItem
             rowSpan={1}
             colSpan={1}
             border={`${BORDER_SIZE} solid #000`}
           >
-            <Text fontSize="xs">Play Recorded Audio</Text>
-            <audio controls src={recordedAudio}></audio>
+            <AudioPlayer src={recordedAudio} desc="Play Recorded Audio" />
           </GridItem>
           <GridItem
             rowSpan={1}
@@ -301,7 +342,7 @@ const SentenceNav: FC = () => {
           }}
         >
           {sentences.map((sentence) => (
-            <ChakraLink>
+            <ChakraLink key={sentence.index}>
               <RouterLink
                 key={sentence.index}
                 to={`/${sentence.content}`}

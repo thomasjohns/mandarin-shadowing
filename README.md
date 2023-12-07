@@ -14,6 +14,7 @@
 - `npx create-react-app ui --template @chakra-ui/typescript`
 - `npm install react-router-dom`
 - `npm install react-feather`
+- `npm install react-media-recorder`
 
 ## Server
 
