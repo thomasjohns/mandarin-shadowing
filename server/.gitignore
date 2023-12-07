@@ -1,0 +1,7 @@
+__pycache__
+venv
+wenv
+
+# for now, need to research if its okay to share the used audio
+audio
+*.mp3
