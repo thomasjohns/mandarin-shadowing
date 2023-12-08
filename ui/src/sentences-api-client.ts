@@ -32,6 +32,7 @@ export const getSentenceAudio = async (index: Index): Promise<Blob | null> => {
 };
 
 export const transcribe = async (
+  index: Index,
   pronunciationURL: string
 ): Promise<TranscriptionResponse> => {
   const pronunciationFile = await fetch(pronunciationURL)
@@ -41,10 +42,13 @@ export const transcribe = async (
     );
   const formData = new FormData();
   formData.append("file", pronunciationFile);
-  const response = await fetch(`${SENTENCES_API_URL}/transcribe`, {
-    method: "POST",
-    body: formData,
-  });
+  const response = await fetch(
+    `${SENTENCES_API_URL}/sentences/${index}/transcribe`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
   if (response.status === 200) {
     return response.json();
   } else {

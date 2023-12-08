@@ -1,5 +1,6 @@
 import { FC, useEffect, useReducer, useState } from "react";
 import {
+  chakra,
   ChakraProvider,
   Grid,
   GridItem,
@@ -18,25 +19,23 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { Mic, Pause } from "react-feather";
+import { AlertTriangle, Mic, Pause } from "react-feather";
 import {
   getSentence,
   getSentenceAudio,
   getSentences,
   transcribe,
 } from "./sentences-api-client";
-import { LocationState, Sentence, Transcription } from "./types";
+import { LocationState, Sentence, TranscriptionResponse } from "./types";
 import { useReactMediaRecorder } from "react-media-recorder-2";
 
 // TODO
-// record audio
-// pass index to transcribe: so we can compute transcription differences server side
-//   transcription comparison
 // factor out these comments file into todo
-// factor out components
+// factor out components?
 // future: word, pinyin hover highlight alignment
 // future: word level pinyin, meaning hovering on content!
 // future: word level audio alignment
+// future: fine tune whisper model on existing known audio transcriptions?
 
 const DEBUG_GRID = false;
 const BORDER_SIZE = DEBUG_GRID ? "1px" : "0px";
@@ -44,30 +43,39 @@ const INITIALLY_SET_RECORDED_AUDIO_TO_NATIVE_AUDIO = false;
 
 interface TranscribedValueProps {
   recordedAudio: string | undefined;
-  transcription: Transcription | null;
+  transcriptionResponse: TranscriptionResponse | null;
+  kind: "content" | "pinyin";
+  fontSize: string;
 }
 
-const TranscribedContent: FC<TranscribedValueProps> = (
+const TranscribedValue: FC<TranscribedValueProps> = (
   props: TranscribedValueProps
 ) => {
   if (props.recordedAudio === undefined) {
     return <Text fontSize="6xl"></Text>;
-  } else if (props.transcription == null) {
+  } else if (props.transcriptionResponse == null) {
     return <Spinner></Spinner>;
   } else {
-    return <Text fontSize="6xl">{props.transcription.content}</Text>;
-  }
-};
-
-const TranscribedPinyin: FC<TranscribedValueProps> = (
-  props: TranscribedValueProps
-) => {
-  if (props.recordedAudio === undefined) {
-    return <Text fontSize="4xl"></Text>;
-  } else if (props.transcription == null) {
-    return <Spinner></Spinner>;
-  } else {
-    return <Text fontSize="4xl">{props.transcription.pinyin}</Text>;
+    const transcription = props.transcriptionResponse[props.kind].transcription;
+    const matchedIndices =
+      props.transcriptionResponse[
+        props.kind
+      ].transcriptionMatchedIndices.flat();
+    const missedIndices =
+      props.transcriptionResponse[props.kind].transcriptionMissedIndices.flat();
+    return (
+      <Text fontSize={props.fontSize}>
+        {transcription.split("").map((char, index) => {
+          if (matchedIndices.includes(index)) {
+            return <chakra.span color="teal">{char}</chakra.span>;
+          } else if (missedIndices.includes(index)) {
+            return <chakra.span color="red">{char}</chakra.span>;
+          } else {
+            return <chakra.span color="black">{char}</chakra.span>;
+          }
+        })}
+      </Text>
+    );
   }
 };
 
@@ -98,7 +106,8 @@ const SentenceView: FC = () => {
   );
   let [recordButtonColor, setRecordButtonColor] = useState("teal");
   let [recordIcon, setRecordIcon] = useState(<Mic />);
-  let [transcription, setTranscription] = useState<Transcription | null>(null);
+  let [transcriptionResponse, setTranscriptionResponse] =
+    useState<TranscriptionResponse | null>(null);
   let [speakHint, setSpeakHint] = useState("");
 
   let { status, startRecording, stopRecording, mediaBlobUrl } =
@@ -112,11 +121,15 @@ const SentenceView: FC = () => {
       if (status !== "recording") {
         startRecording();
         setSpeakHint("Wait a second ...");
-        setTimeout(() => setSpeakHint("Speak!"), 1000);
+        setRecordButtonColor("yellow");
+        setRecordIcon(<AlertTriangle />);
+        setTimeout(() => {
+          setSpeakHint("Speak!");
+          setRecordButtonColor("red");
+          setRecordIcon(<Pause />);
+        }, 1000);
         console.log("starting recording");
       }
-      setRecordButtonColor("red");
-      setRecordIcon(<Pause />);
     } else {
       if (status === "recording") {
         stopRecording();
@@ -132,7 +145,7 @@ const SentenceView: FC = () => {
     setSentence(null);
     setNativeAudio(undefined);
     setRecordedAudio(undefined);
-    setTranscription(null);
+    setTranscriptionResponse(null);
   }, [locationState]);
 
   useEffect(() => {
@@ -169,16 +182,13 @@ const SentenceView: FC = () => {
   }, [mediaBlobUrl]);
 
   useEffect(() => {
-    if (recordedAudio != null) {
-      setTranscription(null);
-      // TODO: could maybe implement a more robust FailedTranscription type and render condition
-      transcribe(recordedAudio)
-        .then((data) => setTranscription(data.transcription))
-        .catch((error) =>
-          setTranscription({ content: "Failed to transcribe.", pinyin: "" })
-        );
+    if (locationState != null && recordedAudio != null) {
+      setTranscriptionResponse(null);
+      transcribe(locationState.index, recordedAudio)
+        .then((data) => setTranscriptionResponse(data))
+        .catch(() => alert("Failed to transcribe."));
     }
-  }, [recordedAudio]);
+  }, [locationState, recordedAudio]);
 
   if (locationState == null) {
     return (
@@ -279,9 +289,11 @@ const SentenceView: FC = () => {
             colSpan={5}
             border={`${BORDER_SIZE} solid #000`}
           >
-            <TranscribedPinyin
+            <TranscribedValue
               recordedAudio={recordedAudio}
-              transcription={transcription}
+              transcriptionResponse={transcriptionResponse}
+              kind="pinyin"
+              fontSize="4xl"
             />
           </GridItem>
           <GridItem
@@ -289,9 +301,11 @@ const SentenceView: FC = () => {
             colSpan={5}
             border={`${BORDER_SIZE} solid #000`}
           >
-            <TranscribedContent
+            <TranscribedValue
               recordedAudio={recordedAudio}
-              transcription={transcription}
+              transcriptionResponse={transcriptionResponse}
+              kind="content"
+              fontSize="6xl"
             />
           </GridItem>
           <GridItem

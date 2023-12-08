@@ -61,11 +61,21 @@ export type LocationState = {
   index: Index;
 };
 
-export type Transcription = {
-  content: Content;
-  pinyin: Pinyin;
-};
-
 export type TranscriptionResponse = {
-  transcription: Transcription;
+  content: {
+    transcription: Content;
+    native: Content;
+    transcriptionMatchedIndices: number[][]; // array of arrays to represent to have match group in each array
+    nativeMatchedIndices: number[][]; // array of arrays to represent to have match group in each array
+    transcriptionMissedIndices: number[][];
+    nativeMissedIndices: number[][];
+  };
+  pinyin: {
+    transcription: Pinyin;
+    native: Pinyin;
+    transcriptionMatchedIndices: number[][];
+    transcriptionMissedIndices: number[][];
+    nativeMatchedIndices: number[][];
+    nativeMissedIndices: number[][];
+  };
 };
