@@ -56,6 +56,11 @@ const TranscribedValue: FC<TranscribedValueProps> = (
   } else if (props.transcriptionResponse == null) {
     return <Spinner></Spinner>;
   } else {
+    // If contents match, we mark both content and pinyin as green, to not introduce
+    // errors based in the way we translate transcribed content to pinyin.
+    const contentsMatch =
+      props.transcriptionResponse.content.transcription ===
+      props.transcriptionResponse.content.native;
     const transcription = props.transcriptionResponse[props.kind].transcription;
     const matchedIndices =
       props.transcriptionResponse[
@@ -66,7 +71,7 @@ const TranscribedValue: FC<TranscribedValueProps> = (
     return (
       <Text fontSize={props.fontSize}>
         {transcription.split("").map((char, index) => {
-          if (matchedIndices.includes(index)) {
+          if (contentsMatch || matchedIndices.includes(index)) {
             return <chakra.span color="teal">{char}</chakra.span>;
           } else if (missedIndices.includes(index)) {
             return <chakra.span color="red">{char}</chakra.span>;
@@ -182,7 +187,7 @@ const SentenceView: FC = () => {
   }, [mediaBlobUrl]);
 
   useEffect(() => {
-    if (locationState != null && recordedAudio != null) {
+    if (locationState != null && recordedAudio != undefined) {
       setTranscriptionResponse(null);
       transcribe(locationState.index, recordedAudio)
         .then((data) => setTranscriptionResponse(data))

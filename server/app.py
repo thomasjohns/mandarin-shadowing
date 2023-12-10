@@ -75,7 +75,7 @@ def transcribe(index: int) -> Resp:
             #  the sentence ..."
             initial_prompt=f'以下句子是普通话，与该句子相似或相同{native_content}'
         )
-        transcribed_content = transcription['text'].replace('?', '\uff1f')
+        transcribed_content = transcription['text'].replace('?', '\uff1f').replace('，', '')
         transcribed_words = [
             w for w in jieba.cut(transcribed_content, cut_all=False)
             if hi.has_chinese(w)
