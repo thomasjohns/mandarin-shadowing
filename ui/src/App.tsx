@@ -99,23 +99,23 @@ const AudioPlayer: FC<AudioPlayerProps> = (props: AudioPlayerProps) => {
 };
 
 const SentenceView: FC = () => {
-  let locationState = useLocation().state as LocationState;
-  let [sentence, setSentence] = useState<Sentence | null>(null);
-  let [nativeAudio, setNativeAudio] = useState<string | undefined>(undefined);
-  let [recordedAudio, setRecordedAudio] = useState<string | undefined>(
+  const locationState = useLocation().state as LocationState;
+  const [sentence, setSentence] = useState<Sentence | null>(null);
+  const [nativeAudio, setNativeAudio] = useState<string | undefined>(undefined);
+  const [recordedAudio, setRecordedAudio] = useState<string | undefined>(
     undefined
   );
-  let [recording, toggleRecording] = useReducer(
+  const [recording, toggleRecording] = useReducer(
     (recording) => !recording,
     false
   );
-  let [recordButtonColor, setRecordButtonColor] = useState("teal");
-  let [recordIcon, setRecordIcon] = useState(<Mic />);
-  let [transcriptionResponse, setTranscriptionResponse] =
+  const [recordButtonColor, setRecordButtonColor] = useState("teal");
+  const [recordIcon, setRecordIcon] = useState(<Mic />);
+  const [transcriptionResponse, setTranscriptionResponse] =
     useState<TranscriptionResponse | null>(null);
-  let [speakHint, setSpeakHint] = useState("");
+  const [speakHint, setSpeakHint] = useState("");
 
-  let { status, startRecording, stopRecording, mediaBlobUrl } =
+  const { status, startRecording, stopRecording, mediaBlobUrl } =
     useReactMediaRecorder({
       audio: true,
       askPermissionOnMount: true,
