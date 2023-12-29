@@ -3,4 +3,5 @@ flask-cors
 hanzidentifier
 jieba
 openai-whisper
+faster-whisper
 xpinyin

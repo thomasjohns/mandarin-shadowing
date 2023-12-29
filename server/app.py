@@ -6,6 +6,7 @@ import os
 import hanzidentifier as hi
 import jieba
 import whisper
+#import faster_whisper
 from flask import Flask
 from flask import jsonify
 from flask import request
