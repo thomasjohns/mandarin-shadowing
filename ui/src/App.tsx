@@ -125,14 +125,14 @@ const SentenceView: FC = () => {
     if (recording) {
       if (status !== "recording") {
         startRecording();
-        setSpeakHint("Wait a second ...");
+        setSpeakHint("Wait a moment ...");
         setRecordButtonColor("yellow");
         setRecordIcon(<AlertTriangle />);
         setTimeout(() => {
           setSpeakHint("Speak!");
           setRecordButtonColor("red");
           setRecordIcon(<Pause />);
-        }, 1000);
+        }, 500); // half a second
         console.log("starting recording");
       }
     } else {
