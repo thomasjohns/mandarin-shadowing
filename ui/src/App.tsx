@@ -187,7 +187,7 @@ const SentenceView: FC = () => {
   }, [mediaBlobUrl]);
 
   useEffect(() => {
-    if (locationState != null && recordedAudio != undefined) {
+    if (locationState != null && recordedAudio !== undefined) {
       setTranscriptionResponse(null);
       transcribe(locationState.index, recordedAudio)
         .then((data) => setTranscriptionResponse(data))
