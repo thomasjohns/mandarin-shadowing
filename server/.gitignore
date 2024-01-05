@@ -2,6 +2,5 @@ __pycache__
 venv
 wenv
 
-# for now, need to research if its okay to share the used audio
-audio
-*.mp3
+# the name of the user recorded audio file cached to disk
+transcribe_source.mp3
